@@ -14,7 +14,7 @@ In your `mix.exs` file
 defp deps do
   [
     # ...
-    {:socket2, "~> 1.0"},
+    {:socket2, "~> 2.1.2"},
     # ...
   ]
 end
@@ -57,6 +57,34 @@ defmodule HTTP do
     end
   end
 end
+```
+SSL
+----------
+### Client
+
+You will need to generate certificates to make it work. Here are some command lines using openssl
+
+```bash
+$ mkdir certs
+$ cd certs
+$ openssl genpkey -algorithm RSA -out key.pem -pkeyopt rsa_keygen_bits:4096
+$ openssl req -new -x509 -key key.pem -out cert.pem -days 1000 -sha384
+```
+
+Then here is a simple example of connecting to an SSL server.
+
+```elixir
+    ipaddr = {1, 2, 3, 5}
+    port = 5061
+    ssl_options = [
+      cert: [path: "certs/certificate.pem"],
+      key: [ path: "certs/private_key.pem" ],
+      verify: false, # Deactivate cert verification
+      versions: [:"tlsv1.2"], # Force TLS 1.2
+      ciphers: [~c"AES256-GCM-SHA384"] # Add secure cipher
+    ]
+    sock = Socket.SSL.connect!(ipaddr, port, ssl_options)
+    Socket.Stream.send(sock, "Hello World!")
 ```
 
 Websockets
