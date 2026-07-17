@@ -18,15 +18,24 @@ defmodule Socket do
 
     def exception(reason: reason) do
       message =
-        cond do
-          msg = Socket.TCP.error(reason) ->
-            msg
+        case reason do
+          r when is_atom(r) ->
+            cond do
+              msg = Socket.TCP.error(reason) ->
+                msg
 
-          msg = Socket.SSL.error(reason) ->
-            msg
+              msg = Socket.SSL.error(reason) ->
+                msg
 
-          true ->
-            reason |> to_string
+              true ->
+                reason |> to_string
+            end
+
+          {:tls_alert, {_errcode, ssl_message}} ->
+            List.to_string(ssl_message)
+
+          _ ->
+            inspect(reason)
         end
 
       %Error{message: message}
