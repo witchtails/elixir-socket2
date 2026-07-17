@@ -227,9 +227,6 @@ defmodule Socket.Web do
 
       e in [Socket.Error] ->
         {:error, e.message}
-
-      e in [Socket.TCP.Error, Socket.SSL.Error] ->
-        {:error, e.code}
     end
   end
 
@@ -484,7 +481,7 @@ defmodule Socket.Web do
         {:error, e.message}
 
       e in [Socket.Error] ->
-        {:error, e.code}
+        {:error, e.message}
     end
   end
 
@@ -1052,7 +1049,7 @@ defmodule Socket.Web do
 
   def active(self, false) when is_map(self) do
     if self.active_pid != nil and Process.alive?(self.active_pid) do
-      Process.send(self.active_pid, :stop)
+      Process.send(self.active_pid, :stop, [])
     end
     Map.put(self, :active_pid, nil)
   end
@@ -1061,12 +1058,13 @@ defmodule Socket.Web do
   defimpl Socket.Protocol do
     require Record
 
-    def equal?(self = %Socket.Web{}, other) do
-      self == other
+
+    def equal?(self = %Socket.Web{}, other) when is_tuple(other) do
+      self |> elem(1) == other
     end
 
     def equal?(self = %Socket.Web{}, other) do
-      self |> elem(1) == other
+      self == other
     end
 
     def equal?(_, _) do
