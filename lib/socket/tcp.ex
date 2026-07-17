@@ -116,11 +116,18 @@ defmodule Socket.TCP do
   """
   @spec connect(String.t() | :inet.ip_address(), :inet.port_number(), Keyword.t()) ::
           {:ok, t} | {:error, Socket.Error.t()}
-  def connect(address, port, options) when address |> is_binary do
+  def connect(address, port, options) when is_binary(address) do
     timeout = options[:timeout] || :infinity
     options = Keyword.delete(options, :timeout)
 
     :gen_tcp.connect(String.to_charlist(address), port, arguments(options), timeout)
+  end
+
+  def connect(address, port, options) when is_tuple(address) do
+    timeout = options[:timeout] || :infinity
+    options = Keyword.delete(options, :timeout)
+
+    :gen_tcp.connect(address, port, arguments(options), timeout)
   end
 
   @doc """

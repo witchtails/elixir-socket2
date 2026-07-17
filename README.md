@@ -103,7 +103,7 @@ In order to connect to a TLS websocket, use the `secure: true` option:
 ```elixir
 socket = Socket.Web.connect!("echo.websocket.org", secure: true)
 ```
-
+Make sure that you also pass SSL options required to setup a proper SSL connection along the `secure: true` option. See SSL client connection above.
 The `connect!` function also accepts other parameters, most notably the `path` parameter, which is used when the websocket server endpoint exists on a path below the domain ie. "example.com/websocket":
 
 ```elixir
@@ -119,6 +119,21 @@ case socket |> Socket.Web.recv!() do
     # process data
   {:ping, _ } ->
     socket |> Socket.Web.send!({:pong, ""})
+end
+```
+
+### Active websockets
+
+Now WebSocket also supports an active mode when you can receive data as Erlang messages. It also handles keepalive automatically.
+Data is received as `{ :web, socket, data }` messages and socket disconnection notification as : `{ web_closed, socket }`
+
+In order to use this function, pass the `mode: active` option. You can also specify the PID of the process receiving the messages using the `process: <pid>` option.
+```elixir
+socket = Socket.Web.connect!("echo.websocket.org", [ mode: :active, process: self() ] )
+Socket.Web.Send(socket, "Hello")
+receive do
+   { :web, _socket, data } -> IO.puts("Received: " <> data)
+   { :web_closed, _socket } -> IO.puts("Active Web socket has closed.")
 end
 ```
 
