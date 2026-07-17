@@ -30,7 +30,7 @@ defmodule Socket do
               reason |> to_string
           end
 
-        { :tls_alert, { errcode, ssl_message }} ->
+        { :tls_alert, { _errcode, ssl_message }} ->
           List.to_string(ssl_message)
 
         _ -> inspect(reason)

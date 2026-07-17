@@ -156,7 +156,7 @@ defmodule Socket.Web do
         send!(self, {:pong, ""})
         active_websocket_process(self)
 
-      {:error, reason} -> nil
+      {:error, _reason} -> nil
 
       {:ok, {:close, :abnormal, nil}} ->
         if self.target_pid do
