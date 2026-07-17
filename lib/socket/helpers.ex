@@ -5,21 +5,23 @@ defmodule Socket.Helpers do
     end
   end
 
+  @doc """
+  Unwrap the result of a socket call, raising `Socket.Error` on failure.
+
+  Used by the `defbang` macro. Keeping the pattern match in a runtime function
+  (rather than inline at the call site) avoids "clause will never match"
+  warnings when the wrapped function has a narrower return type.
+  """
+  def bang(:ok), do: :ok
+  def bang({:ok, result}), do: result
+  def bang({:error, reason}), do: raise(Socket.Error, reason: reason)
+
   defmacro defbang({name, _, args}) do
     args = if is_list(args), do: args, else: []
 
     quote bind_quoted: [name: Macro.escape(name), args: Macro.escape(args)] do
       def unquote((to_string(name) <> "!") |> String.to_atom())(unquote_splicing(args)) do
-        case unquote(name)(unquote_splicing(args)) do
-          :ok ->
-            :ok
-
-          {:ok, result} ->
-            result
-
-          {:error, reason} ->
-            raise Socket.Error, reason: reason
-        end
+        Socket.Helpers.bang(unquote(name)(unquote_splicing(args)))
       end
     end
   end
@@ -33,16 +35,7 @@ defmodule Socket.Helpers do
             args: Macro.escape(args)
           ] do
       def unquote((to_string(name) <> "!") |> String.to_atom())(unquote_splicing(args)) do
-        case unquote(mod).unquote(name)(unquote_splicing(args)) do
-          :ok ->
-            :ok
-
-          {:ok, result} ->
-            result
-
-          {:error, reason} ->
-            raise Socket.Error, reason: reason
-        end
+        Socket.Helpers.bang(unquote(mod).unquote(name)(unquote_splicing(args)))
       end
     end
   end

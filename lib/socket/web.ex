@@ -152,7 +152,7 @@ defmodule Socket.Web do
         end
         active_websocket_process(self)
 
-      {:ping, _ } ->
+      {:ok, {:ping, _}} ->
         send!(self, {:pong, ""})
         active_websocket_process(self)
 
@@ -858,8 +858,8 @@ defmodule Socket.Web do
     <<127::7, byte_size(data)::64>>
   end
 
-  @spec forge(nil | true | integer, binary) :: binary
-  defp forge(nil, data) do
+  @spec forge(nil | boolean | integer, binary) :: binary
+  defp forge(mask, data) when mask in [nil, false] do
     <<0::1, length(data)::bitstring, data::bitstring>>
   end
 
@@ -1060,7 +1060,7 @@ defmodule Socket.Web do
 
 
     def equal?(self = %Socket.Web{}, other) when is_tuple(other) do
-      self |> elem(1) == other
+      self.socket == other
     end
 
     def equal?(self = %Socket.Web{}, other) do
@@ -1076,7 +1076,7 @@ defmodule Socket.Web do
     end
 
     def options(self = %Socket.Web{}, opts) do
-      Socket.Web.options(self, opts)
+      Socket.options(self.socket, opts)
     end
 
     def packet(self = %Socket.Web{}, _type) do
@@ -1088,7 +1088,7 @@ defmodule Socket.Web do
     end
 
     def active(self = %Socket.Web{}) do
-      active(self, true)
+      Socket.Web.active(self, true)
     end
 
     def active(self = %Socket.Web{}, :once) do
@@ -1096,7 +1096,7 @@ defmodule Socket.Web do
     end
 
     def passive(self = %Socket.Web{}) do
-      active(self, false)
+      Socket.Web.active(self, false)
     end
 
     def local(self = %Socket.Web{}) do
