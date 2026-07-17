@@ -79,6 +79,7 @@ defmodule Socket.Address do
     end
   end
 
+
   @doc """
   Check if an IP address belong to a network
   """
