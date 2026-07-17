@@ -92,19 +92,17 @@ defmodule Socket.Web do
     end
   end
 
-  defstruct [
-    socket: nil,
-    version: 13,
-    path: nil,
-    origin: nil,
-    protocols: [],
-    extensions: nil,
-    key: nil,
-    mask: false,
-    active_pid: nil,
-    target_pid: nil,
-    headers: {}
-  ]
+  defstruct socket: nil,
+            version: 13,
+            path: nil,
+            origin: nil,
+            protocols: [],
+            extensions: nil,
+            key: nil,
+            mask: false,
+            active_pid: nil,
+            target_pid: nil,
+            headers: {}
 
   @type t :: %Socket.Web{
           socket: term,
@@ -145,23 +143,26 @@ defmodule Socket.Web do
   # Active Web socket process function
   defp active_websocket_process(self) do
     case recv(self) do
-        # process data
+      # process data
       {:ok, {:text, data}} ->
         if self.target_pid do
-          Kernel.send(self.target_pid, { :web, self, data })
+          Kernel.send(self.target_pid, {:web, self, data})
         end
+
         active_websocket_process(self)
 
       {:ok, {:ping, _}} ->
         send!(self, {:pong, ""})
         active_websocket_process(self)
 
-      {:error, _reason} -> nil
+      {:error, _reason} ->
+        nil
 
       {:ok, {:close, :abnormal, nil}} ->
         if self.target_pid do
-          Kernel.send(self.target_pid, { :web_closed, self } )
+          Kernel.send(self.target_pid, {:web_closed, self})
         end
+
         nil
     end
   end
@@ -349,9 +350,23 @@ defmodule Socket.Web do
 
     client |> Socket.packet!(:raw)
 
-    self = %Socket.Web{socket: client, version: 13, path: path, origin: origin, key: handshake, mask: true}
+    self = %Socket.Web{
+      socket: client,
+      version: 13,
+      path: path,
+      origin: origin,
+      key: handshake,
+      mask: true
+    }
+
     if local[:mode] == :active do
-      target_pid = if is_nil(local[:process]) do self() else local[:process] end
+      target_pid =
+        if is_nil(local[:process]) do
+          self()
+        else
+          local[:process]
+        end
+
       process(self, target_pid) |> active(true)
     else
       self
@@ -594,7 +609,6 @@ defmodule Socket.Web do
         {:handshake, _} -> true
         {:headers, _} -> true
         {:process, _} -> true
-
         # active websocket will be reimplemented
         {:mode, _} -> true
         _ -> false
@@ -1051,13 +1065,13 @@ defmodule Socket.Web do
     if self.active_pid != nil and Process.alive?(self.active_pid) do
       Process.send(self.active_pid, :stop, [])
     end
+
     Map.put(self, :active_pid, nil)
   end
 
   # ------------------ Socket protocol implementation for WebSocket ----
   defimpl Socket.Protocol do
     require Record
-
 
     def equal?(self = %Socket.Web{}, other) when is_tuple(other) do
       self.socket == other
@@ -1111,5 +1125,4 @@ defmodule Socket.Web do
       Socket.Web.close(self)
     end
   end
-
 end
