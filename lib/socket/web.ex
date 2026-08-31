@@ -277,7 +277,7 @@ defmodule Socket.Web do
       "GET #{path} HTTP/1.1",
       "\r\n",
       headers,
-      "Host: #{address}:#{port}",
+      "Host: #{Socket.Address.to_uri_host(address)}:#{port}",
       "\r\n",
       if(origin, do: ["Origin: #{origin}", "\r\n"], else: []),
       "Upgrade: websocket",
