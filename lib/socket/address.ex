@@ -70,6 +70,21 @@ defmodule Socket.Address do
   end
 
   @doc """
+  Render an address the way a URI authority carries it (RFC 3986 3.2.2): an
+  IPv6 literal goes inside square brackets, anything else comes out unchanged.
+
+  Without the brackets a `Host` header reads `::1:443`, which no peer can split
+  into an address and a port.
+  """
+  @spec to_uri_host(t) :: String.t()
+  def to_uri_host(address) do
+    case parse(address) do
+      {_, _, _, _, _, _, _, _} = ip -> "[" <> __MODULE__.to_string(ip) <> "]"
+      _ -> __MODULE__.to_string(address)
+    end
+  end
+
+  @doc """
   Get the addresses for the given host.
   """
   @spec for(t, :inet.address_family()) :: {:ok, [t]} | {:error, :inet.posix()}

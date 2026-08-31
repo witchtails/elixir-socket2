@@ -65,4 +65,37 @@ defmodule Socket.IPv6Test do
     assert {:ok, [ipv6_v6only: false]} = :inet.getopts(socket, [:ipv6_v6only])
     :gen_udp.close(socket)
   end
+
+  test "a URI authority brackets an IPv6 literal and nothing else" do
+    assert Socket.Address.to_uri_host(@v6) == "[::1]"
+    assert Socket.Address.to_uri_host("::1") == "[::1]"
+    assert Socket.Address.to_uri_host(~c"::1") == "[::1]"
+    assert Socket.Address.to_uri_host("[::1]") == "[::1]"
+    assert Socket.Address.to_uri_host({127, 0, 0, 1}) == "127.0.0.1"
+    assert Socket.Address.to_uri_host("127.0.0.1") == "127.0.0.1"
+    assert Socket.Address.to_uri_host("example.com") == "example.com"
+    # The rendering is canonical (RFC 5952), not the caller's spelling.
+    assert Socket.Address.to_uri_host("2001:DB8:0:0:0:0:0:1") == "[2001:db8::1]"
+  end
+
+  test "a WebSocket handshake carries a bracketed Host over IPv6" do
+    listener = Socket.Web.listen!(0, local: [address: @v6], version: 6)
+    {_ip, port} = Socket.Web.local!(listener)
+    parent = self()
+
+    Task.start_link(fn ->
+      client = Socket.Web.accept!(listener)
+      send(parent, {:host, client.headers["host"]})
+      Socket.Web.accept!(client)
+      Socket.Web.send!(client, Socket.Web.recv!(client))
+    end)
+
+    socket = Socket.Web.connect!("::1", port)
+
+    assert_receive {:host, host}, 1_000
+    assert host == "[::1]:#{port}"
+
+    Socket.Web.send!(socket, {:text, "v6"})
+    assert Socket.Web.recv!(socket) == {:text, "v6"}
+  end
 end
