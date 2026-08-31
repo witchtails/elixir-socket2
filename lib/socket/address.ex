@@ -15,6 +15,18 @@ defmodule Socket.Address do
   Parse a string to an ip address tuple.
   """
   @spec parse(t) :: :inet.ip_address()
+  # An IPv6 literal travels inside square brackets in a URI authority or a Host
+  # header (RFC 3986 3.2.2), and that is the form a caller usually has in hand.
+  # Only a v6 address is written that way, so "[127.0.0.1]" is not an address.
+  def parse("[" <> rest) do
+    with [inside, ""] <- String.split(rest, "]"),
+         {_, _, _, _, _, _, _, _} = ip <- parse(inside) do
+      ip
+    else
+      _ -> nil
+    end
+  end
+
   def parse(text) when text |> is_binary do
     parse(String.to_charlist(text))
   end
