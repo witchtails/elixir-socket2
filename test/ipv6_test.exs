@@ -27,4 +27,16 @@ defmodule Socket.IPv6Test do
     Socket.close(from_tuple)
     Socket.close(listener)
   end
+
+  test "SSL sends an IPv6 literal to the socket, not to the resolver" do
+    # No TLS server answers here, so the handshake cannot succeed. What the test
+    # reads is the failure: :nxdomain means the literal went to the resolver.
+    listener = Socket.TCP.listen!(0, local: [address: @v6], version: 6)
+    {_ip, port} = Socket.local!(listener)
+
+    assert {:error, reason} = Socket.SSL.connect("::1", port, timeout: 500)
+    refute reason == :nxdomain
+
+    Socket.close(listener)
+  end
 end
