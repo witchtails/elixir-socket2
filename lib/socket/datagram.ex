@@ -52,9 +52,12 @@ end
 
 defimpl Socket.Datagram.Protocol, for: Port do
   def send(self, data, {address, port}) do
+    # An IP literal is an address, not a host name (see Socket.TCP.connect/3).
+    # As a charlist it goes through a resolution in the socket's family on every
+    # single datagram, and the bracketed form a URI carries resolves to nothing.
     address =
       if address |> is_binary do
-        address |> String.to_charlist()
+        Socket.Address.parse(address) || String.to_charlist(address)
       else
         address
       end
