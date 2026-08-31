@@ -152,9 +152,10 @@ defmodule Socket.SSL do
   """
   @spec connect(Socket.Address.t(), :inet.port_number(), Keyword.t()) :: {:ok, t} | {:error, term}
   def connect(address, port, options) do
+    # An IP literal is an address, not a host name (see Socket.TCP.connect/3).
     address =
       if address |> is_binary do
-        String.to_charlist(address)
+        Socket.Address.parse(address) || String.to_charlist(address)
       else
         address
       end
