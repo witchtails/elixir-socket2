@@ -21,6 +21,7 @@ defmodule Socket.UDP do
     - `:address` the local address to use
     - `:fd` an already opened file descriptor to use
   * `:version` sets the IP version to use
+  * `:v6only` keeps an IPv6 socket from also accepting IPv4
   * `:broadcast` enables broadcast sending
 
   ## Examples
@@ -138,6 +139,7 @@ defmodule Socket.UDP do
         {:as, _} -> true
         {:local, _} -> true
         {:version, _} -> true
+        {:v6only, _} -> true
         {:broadcast, _} -> true
         {:multicast, _} -> true
         {:membership, _} -> true
@@ -171,6 +173,12 @@ defmodule Socket.UDP do
 
         {:version, 6} ->
           [:inet6]
+
+        # An IPv6 socket that also accepts IPv4 receives from those peers under
+        # `::ffff:a.b.c.d`, and everything writing a peer address into a protocol
+        # message then carries that form. Only the socket can be told otherwise.
+        {:v6only, v6only} ->
+          [{:ipv6_v6only, v6only}]
 
         {:broadcast, broadcast} ->
           [{:broadcast, broadcast}]
