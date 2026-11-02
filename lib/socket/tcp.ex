@@ -114,20 +114,35 @@ defmodule Socket.TCP do
   @doc """
   Create a TCP socket connecting to the given host and port.
   """
-  @spec connect(String.t() | :inet.ip_address(), :inet.port_number(), Keyword.t()) ::
+  @spec connect(Socket.Address.t(), :inet.port_number(), Keyword.t()) ::
           {:ok, t} | {:error, Socket.Error.t()}
-  def connect(address, port, options) when address |> is_binary do
+  # An IP literal is an address, not a host name. Handed to :gen_tcp as a
+  # charlist it is resolved in the socket's family, so "::1" comes back
+  # :nxdomain on a socket nobody told to be :inet6 — while the tuple carries its
+  # family itself.
+  def connect(address, port, options) when is_binary(address) do
+    connect(Socket.Address.parse(address) || String.to_charlist(address), port, options)
+  end
+
+  def connect(address, port, options) when is_list(address) do
     timeout = options[:timeout] || :infinity
     options = Keyword.delete(options, :timeout)
 
-    :gen_tcp.connect(String.to_charlist(address), port, arguments(options), timeout)
+    :gen_tcp.connect(address, port, arguments(options), timeout)
+  end
+
+  def connect(address, port, options) when is_tuple(address) do
+    timeout = options[:timeout] || :infinity
+    options = Keyword.delete(options, :timeout)
+
+    :gen_tcp.connect(address, port, arguments(options), timeout)
   end
 
   @doc """
   Create a TCP socket connecting to the given host and port, raising in case of
   error.
   """
-  @spec connect!(String.t() | :inet.ip_address(), :inet.port_number(), Keyword.t()) ::
+  @spec connect!(Socket.Address.t(), :inet.port_number(), Keyword.t()) ::
           t | no_return
   defbang(connect(address, port, options))
 
