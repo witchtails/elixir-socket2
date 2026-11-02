@@ -39,4 +39,30 @@ defmodule Socket.IPv6Test do
 
     Socket.close(listener)
   end
+
+  test "a datagram reaches an IPv6 peer named as a tuple, a string or a reference" do
+    {:ok, server} = :gen_udp.open(0, [:binary, {:ip, @v6}, {:active, false}])
+    {:ok, {_ip, port}} = :inet.sockname(server)
+    client = Socket.UDP.open!(0, mode: :passive, local: [address: @v6])
+
+    for target <- [@v6, "::1", "[::1]"] do
+      assert Socket.Datagram.send(client, "ping", {target, port}) == :ok,
+             "sending to #{inspect(target)} failed"
+
+      assert {:ok, {_, _, "ping"}} = :gen_udp.recv(server, 0, 1_000)
+    end
+
+    :gen_udp.close(client)
+    :gen_udp.close(server)
+  end
+
+  test "an IPv6 socket can be kept from accepting IPv4" do
+    socket = Socket.UDP.open!(0, mode: :passive, version: 6, v6only: true)
+    assert {:ok, [ipv6_v6only: true]} = :inet.getopts(socket, [:ipv6_v6only])
+    :gen_udp.close(socket)
+
+    socket = Socket.UDP.open!(0, mode: :passive, version: 6, v6only: false)
+    assert {:ok, [ipv6_v6only: false]} = :inet.getopts(socket, [:ipv6_v6only])
+    :gen_udp.close(socket)
+  end
 end
