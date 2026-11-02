@@ -30,6 +30,13 @@ defmodule SocketTest do
     assert socket |> Socket.Web.recv!() == {:pong, "test"}
   end
 
+  test "accept reports a Socket.Error as a message" do
+    listener = Socket.Web.listen!(0)
+
+    assert {:error, message} = Socket.Web.accept(listener, timeout: 50)
+    assert is_binary(message)
+  end
+
   def server(port) do
     server = Socket.Web.listen!(port)
     client = server |> Socket.Web.accept!()
